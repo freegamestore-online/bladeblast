@@ -1,61 +1,38 @@
-export type GamePhase = "menu" | "playing" | "levelComplete" | "gameOver" | "customize";
+export type GamePhase = "menu" | "playing" | "dead";
 
-export interface Vec3 {
+export interface Player {
   x: number;
   y: number;
-  z: number;
+  r: number;
+  vx: number;
+  vy: number;
+  invincible: number; // seconds of invincibility remaining
+  trail: { x: number; y: number }[];
 }
 
-export interface FruitHalf {
+export interface Bomb {
   id: number;
   x: number;
   y: number;
   vx: number;
   vy: number;
+  r: number;
   rotation: number;
   rotSpeed: number;
-  type: FruitType;
-  side: "left" | "right";
-  alpha: number;
-  scale: number;
+  pulse: number; // 0..1 animation phase
 }
 
-export type FruitType = "watermelon" | "orange" | "apple" | "banana" | "pineapple" | "strawberry" | "lemon" | "grape";
-
-export interface Fruit {
+export interface Star {
   id: number;
   x: number;
   y: number;
-  z: number; // depth 0..1 for 3D effect
   vx: number;
   vy: number;
-  vz: number;
+  r: number;
   rotation: number;
   rotSpeed: number;
-  type: FruitType;
-  radius: number;
-  sliced: boolean;
-  missed: boolean; // fell off screen without slicing
-  spawnTime: number;
-}
-
-export interface Spike {
-  id: number;
-  x: number;
-  y: number;
-  z: number;
-  vx: number;
-  vy: number;
-  vz: number;
-  rotation: number;
-  rotSpeed: number;
-  radius: number;
-  hit: boolean;
-  spawnTime: number;
-}
-
-export interface SliceTrail {
-  points: { x: number; y: number; t: number }[];
+  twinkle: number;
+  color: string;
 }
 
 export interface Particle {
@@ -66,27 +43,15 @@ export interface Particle {
   vy: number;
   color: string;
   life: number;
-  maxLife: number;
   size: number;
 }
 
-export interface KnifeStyle {
-  id: string;
-  name: string;
-  bladeColor: string;
-  handleColor: string;
-  glowColor: string;
-  trailColor: string;
-  emoji: string;
-}
-
-export interface LevelConfig {
-  level: number;
-  name: string;
-  fruitsToSlice: number;
-  spawnRate: number; // fruits per second
-  spikeRate: number; // spikes per second
-  maxMisses: number;
-  speedMult: number;
-  background: string;
+export interface FloatText {
+  id: number;
+  x: number;
+  y: number;
+  text: string;
+  color: string;
+  life: number;
+  vy: number;
 }
