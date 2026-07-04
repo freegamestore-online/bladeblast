@@ -1,38 +1,59 @@
-export type GamePhase = "menu" | "playing" | "dead";
+export type GamePhase = "menu" | "select" | "playing" | "dead";
 
+// ── Animal definitions ────────────────────────────────────────────────────────
+export type RarityTier = "common" | "uncommon" | "rare" | "epic" | "legendary";
+
+export interface AnimalTier {
+  tier: RarityTier;
+  emoji: string;
+  label: string;
+  color: string;       // body glow color
+  cost: number;        // stars to unlock this tier (0 = free)
+  aura?: string;       // extra aura color for rare+
+}
+
+export interface AnimalDef {
+  id: string;
+  name: string;
+  tiers: AnimalTier[];  // index 0 = common, ascending rarity
+}
+
+// ── Game objects ──────────────────────────────────────────────────────────────
 export interface Player {
   x: number;
   y: number;
-  r: number;
   vx: number;
   vy: number;
-  invincible: number; // seconds of invincibility remaining
-  trail: { x: number; y: number }[];
+  w: number;
+  h: number;
+  onGround: boolean;
+  invincible: number;
 }
 
-export interface Bomb {
+export interface FallingBomb {
   id: number;
   x: number;
   y: number;
-  vx: number;
   vy: number;
   r: number;
   rotation: number;
   rotSpeed: number;
-  pulse: number; // 0..1 animation phase
+  pulse: number;
+  exploded: boolean;
+  explodeTimer: number;
 }
 
-export interface Star {
+export interface FallingStar {
   id: number;
   x: number;
   y: number;
-  vx: number;
   vy: number;
   r: number;
   rotation: number;
   rotSpeed: number;
   twinkle: number;
   color: string;
+  collected: boolean;
 }
 
 export interface Particle {
@@ -50,8 +71,17 @@ export interface FloatText {
   id: number;
   x: number;
   y: number;
+  vy: number;
   text: string;
   color: string;
   life: number;
-  vy: number;
+}
+
+export interface ShockWave {
+  id: number;
+  x: number;
+  y: number;
+  r: number;
+  maxR: number;
+  life: number;
 }
