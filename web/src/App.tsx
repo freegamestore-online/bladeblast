@@ -13,9 +13,12 @@ const PLAYER_W = 52;
 const PLAYER_H = 52;
 const GRAVITY = 1800;
 const JUMP_VEL = -620;
-const MOVE_ACCEL = 1800;
-const MOVE_FRICTION = 0.78;
-const MAX_SPEED = 380;
+// Movement must be SNAPPY — bombs fall at 120-200+ px/s, so the player needs
+// to out-run them. The old tuning (accel 1800, friction 0.78/frame) settled at
+// ~106 px/s: the character felt glued to the ground and dodging was impossible.
+const MOVE_ACCEL = 5200;
+const MOVE_FRICTION = 0.85;
+const MAX_SPEED = 460;
 const GROUND_Y_FRAC = 0.82; // ground line at 82% of canvas height
 const STAR_COLORS = ["#ffd700", "#ffe066", "#40c4ff", "#e040fb", "#ff8f00", "#69f0ae"];
 
