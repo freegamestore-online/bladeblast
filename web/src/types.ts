@@ -7,15 +7,15 @@ export interface AnimalTier {
   tier: RarityTier;
   emoji: string;
   label: string;
-  color: string;       // body glow color
-  cost: number;        // stars to unlock this tier (0 = free)
-  aura?: string;       // extra aura color for rare+
+  color: string;
+  cost: number;
+  aura?: string;
 }
 
 export interface AnimalDef {
   id: string;
   name: string;
-  tiers: AnimalTier[];  // index 0 = common, ascending rarity
+  tiers: AnimalTier[];
 }
 
 // ── Game objects ──────────────────────────────────────────────────────────────
@@ -53,6 +53,18 @@ export interface FallingStar {
   rotSpeed: number;
   twinkle: number;
   color: string;
+  collected: boolean;
+}
+
+export interface FallingMedicine {
+  id: number;
+  x: number;
+  y: number;
+  vy: number;
+  r: number;
+  rotation: number;
+  rotSpeed: number;
+  bob: number;
   collected: boolean;
 }
 
