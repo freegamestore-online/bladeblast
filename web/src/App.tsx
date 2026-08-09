@@ -25,6 +25,11 @@ const MAX_LIVES = 3;
 const MAX_MEDICINE = 3;
 const STAR_COLORS = ["#ffd700", "#ffe066", "#40c4ff", "#e040fb", "#ff8f00", "#69f0ae"];
 
+// ── Bomb speed constants — tweak here to make bombs faster/slower ─────────────
+const BOMB_BASE_SPEED = 240;      // was 120 — starting drop speed (px/s)
+const BOMB_WAVE_SCALE = 45;       // was 28  — extra speed added per wave
+const BOMB_RANDOM_RANGE = 80;     // was 60  — random extra speed per bomb
+
 let _uid = 1;
 const uid = () => _uid++;
 
@@ -123,11 +128,19 @@ export default function App() {
   const spawnBomb = useCallback((W: number) => {
     const wave = waveRef.current;
     const r = 18 + Math.random() * 9;
+    // Speed ramps up quickly — base is now 240 px/s, +45 per wave
+    const vy = BOMB_BASE_SPEED + wave * BOMB_WAVE_SCALE + Math.random() * BOMB_RANDOM_RANGE;
     bombs.current.push({
-      id: uid(), x: r + Math.random() * (W - r * 2), y: -r - Math.random() * 60,
-      vy: 120 + wave * 28 + Math.random() * 60, r,
-      rotation: Math.random() * Math.PI * 2, rotSpeed: (Math.random() - 0.5) * 4,
-      pulse: Math.random(), exploded: false, explodeTimer: 0,
+      id: uid(),
+      x: r + Math.random() * (W - r * 2),
+      y: -r - Math.random() * 40,   // tighter vertical spread so they arrive sooner
+      vy,
+      r,
+      rotation: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 5,
+      pulse: Math.random(),
+      exploded: false,
+      explodeTimer: 0,
     });
   }, []);
 
@@ -135,7 +148,7 @@ export default function App() {
     const r = 14 + Math.random() * 7;
     stars.current.push({
       id: uid(), x: r + Math.random() * (W - r * 2), y: -r - Math.random() * 40,
-      vy: 80 + Math.random() * 50, r,
+      vy: 90 + Math.random() * 60, r,
       rotation: Math.random() * Math.PI * 2, rotSpeed: (Math.random() - 0.5) * 3,
       twinkle: Math.random(), color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)]!,
       collected: false,
@@ -229,14 +242,14 @@ export default function App() {
     }
     const wave = waveRef.current;
 
-    // Spawn bombs
-    const bombInterval = Math.max(0.3, 1.5 - wave * 0.1);
+    // Spawn bombs — interval tightens per wave
+    const bombInterval = Math.max(0.25, 1.3 - wave * 0.1);
     bombTimer.current += dt;
     while (bombTimer.current >= bombInterval) {
       bombTimer.current -= bombInterval;
       spawnBomb(W);
-      if (wave >= 4 && Math.random() < 0.4) spawnBomb(W);
-      if (wave >= 7 && Math.random() < 0.3) spawnBomb(W);
+      if (wave >= 3 && Math.random() < 0.4) spawnBomb(W);
+      if (wave >= 6 && Math.random() < 0.35) spawnBomb(W);
     }
 
     // Spawn stars
@@ -246,7 +259,7 @@ export default function App() {
       starTimer.current -= starInterval; spawnStar(W);
     }
 
-    // Spawn medicine — every ~18s, only if player needs it and slot free
+    // Spawn medicine
     const medInterval = Math.max(12, 18 - wave * 0.4);
     medTimer.current += dt;
     if (medTimer.current >= medInterval && meds.current.length === 0 && medRef.current < MAX_MEDICINE) {
@@ -385,12 +398,12 @@ export default function App() {
       ctx.restore();
     }
 
-    // Danger arrow for nearby bombs
+    // Danger arrow for bombs directly above player
     for (const b of bombs.current) {
       if (b.exploded) continue;
-      if (Math.abs(b.x - (pl.x + pl.w / 2)) < 60 && b.y < pl.y) {
+      if (Math.abs(b.x - (pl.x + pl.w / 2)) < 55 && b.y < pl.y) {
         const ax = b.x; const ay = Math.max(b.y + b.r + 10, pl.y - 50);
-        ctx.save(); ctx.globalAlpha = 0.7;
+        ctx.save(); ctx.globalAlpha = 0.8;
         ctx.fillStyle = "#ff1744"; ctx.shadowColor = "#ff1744"; ctx.shadowBlur = 8;
         ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax - 8, ay - 14); ctx.lineTo(ax + 8, ay - 14); ctx.closePath(); ctx.fill();
         ctx.restore();
@@ -452,7 +465,6 @@ export default function App() {
   const renderSelect = () => (
     <div className="absolute inset-0 flex flex-col overflow-hidden"
       style={{ background: "linear-gradient(180deg,#0d0033,#1a0050)" }}>
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 shrink-0"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
         <button onClick={() => setPhase("menu")} className="text-2xl">←</button>
@@ -464,7 +476,6 @@ export default function App() {
           <span className="font-bold">{bankStars}</span>
         </div>
       </div>
-      {/* Animal grid */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4">
         {ANIMALS.map(a => (
           <div key={a.id} className="rounded-2xl p-3"
@@ -545,126 +556,109 @@ export default function App() {
         <button onClick={() => setPhase("select")}
           className="w-full py-3 rounded-2xl text-lg font-bold"
           style={{ background: "rgba(255,255,255,0.1)", color: "#fff", border: "2px solid rgba(255,255,255,0.2)" }}>
-          🐾 Upgrade Animal
+          🐾 Change Animal
         </button>
         <button onClick={() => setPhase("menu")}
-          className="w-full py-3 rounded-2xl text-base"
-          style={{ color: "rgba(255,255,255,0.5)" }}>
-          ← Menu
+          className="w-full py-3 rounded-2xl text-lg font-bold"
+          style={{ background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.1)" }}>
+          🏠 Menu
         </button>
       </div>
     </div>
   );
 
-  // ── In-game HUD ───────────────────────────────────────────────────────────
+  // ── HUD ───────────────────────────────────────────────────────────────────
   const renderHUD = () => (
-    <div className="absolute inset-x-0 top-0 pointer-events-none">
+    <div className="absolute inset-0 pointer-events-none flex flex-col">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-3 pt-2 pb-1">
+      <div className="flex items-center justify-between px-3 pt-2 pb-1 pointer-events-none"
+        style={{ background: "linear-gradient(180deg,rgba(0,0,0,0.55) 0%,transparent 100%)" }}>
         {/* Lives */}
-        <div className="flex items-center gap-1">
+        <div className="flex gap-1 items-center">
           {Array.from({ length: MAX_LIVES }).map((_, i) => (
-            <span key={i} style={{ fontSize: 20, opacity: i < livesDisplay ? 1 : 0.2 }}>❤️</span>
+            <span key={i} className="text-xl" style={{ opacity: i < livesDisplay ? 1 : 0.25 }}>❤️</span>
           ))}
         </div>
-        {/* Wave */}
-        <div className="rounded-full px-3 py-1 text-sm font-bold"
-          style={{ background: "rgba(224,64,251,0.25)", color: "#e040fb", border: "1px solid rgba(224,64,251,0.4)" }}>
-          Wave {waveDisplay}
+        {/* Score */}
+        <div className="text-center">
+          <div className="font-bold text-lg leading-none" style={{ fontFamily: "Fraunces, serif", color: "#ffd700", textShadow: "0 0 10px #ffd70088" }}>
+            {score}
+          </div>
+          <div className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>Wave {waveDisplay}</div>
         </div>
-        {/* Stars */}
-        <div className="flex items-center gap-1 rounded-full px-3 py-1"
-          style={{ background: "rgba(255,215,0,0.15)", border: "1px solid rgba(255,215,0,0.3)" }}>
-          <span style={{ fontSize: 16 }}>⭐</span>
-          <span className="text-sm font-bold" style={{ color: "#ffd700" }}>{starsEarned}</span>
-        </div>
-      </div>
-
-      {/* Medicine bar */}
-      <div className="flex items-center gap-2 px-3 mt-1">
-        <div className="flex items-center gap-1 rounded-full px-3 py-1"
-          style={{ background: "rgba(0,230,118,0.15)", border: "1px solid rgba(0,230,118,0.3)" }}>
+        {/* Medicine */}
+        <div className="flex items-center gap-1">
           {Array.from({ length: MAX_MEDICINE }).map((_, i) => (
-            <span key={i} style={{ fontSize: 18, opacity: i < medDisplay ? 1 : 0.2 }}>💊</span>
+            <span key={i} className="text-lg" style={{ opacity: i < medDisplay ? 1 : 0.2 }}>💊</span>
           ))}
-          <span className="text-xs ml-1 font-bold" style={{ color: "#69f0ae" }}>
-            {medDisplay}/{MAX_MEDICINE}
-          </span>
         </div>
-        {medDisplay > 0 && livesDisplay < MAX_LIVES && (
-          <span className="text-xs animate-pulse" style={{ color: "#69f0ae" }}>
-            Press E / 💊 to heal!
-          </span>
-        )}
-        {useHint && medDisplay > 0 && livesDisplay === MAX_LIVES && (
-          <span className="text-xs" style={{ color: "rgba(105,240,174,0.6)" }}>
-            💊 saved for later
-          </span>
-        )}
       </div>
-    </div>
-  );
 
-  // ── Touch controls ────────────────────────────────────────────────────────
-  const renderTouchControls = () => (
-    <div className="absolute inset-x-0 bottom-0 pointer-events-none" style={{ height: "22%" }}>
-      <div className="flex items-center justify-between px-4 h-full pointer-events-auto">
-        {/* Left */}
-        <button
-          onPointerDown={() => { touchLeft.current = true; }}
-          onPointerUp={() => { touchLeft.current = false; }}
-          onPointerCancel={() => { touchLeft.current = false; }}
-          className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl select-none"
-          style={{ background: "rgba(255,255,255,0.12)", border: "2px solid rgba(255,255,255,0.2)", touchAction: "none" }}>
-          ◀
-        </button>
-        {/* Middle: jump + medicine */}
-        <div className="flex flex-col items-center gap-2">
+      {/* Use hint */}
+      {useHint && medDisplay > 0 && (
+        <div className="mx-auto mt-1 px-3 py-1 rounded-full text-xs pointer-events-none"
+          style={{ background: "rgba(0,230,118,0.2)", color: "#69f0ae", border: "1px solid #69f0ae55" }}>
+          Press E / tap 💊 to heal!
+        </div>
+      )}
+
+      {/* Touch controls */}
+      <div className="flex-1" />
+      <div className="flex items-end justify-between px-4 pb-4 pointer-events-auto">
+        {/* Left / Right */}
+        <div className="flex gap-3">
+          <button
+            onPointerDown={() => { touchLeft.current = true; }}
+            onPointerUp={() => { touchLeft.current = false; }}
+            onPointerLeave={() => { touchLeft.current = false; }}
+            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl select-none active:scale-95"
+            style={{ background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)", touchAction: "none" }}>
+            ◀
+          </button>
+          <button
+            onPointerDown={() => { touchRight.current = true; }}
+            onPointerUp={() => { touchRight.current = false; }}
+            onPointerLeave={() => { touchRight.current = false; }}
+            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl select-none active:scale-95"
+            style={{ background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)", touchAction: "none" }}>
+            ▶
+          </button>
+        </div>
+        {/* Medicine + Jump */}
+        <div className="flex gap-3">
           <button
             onPointerDown={() => { touchMed.current = true; }}
             onPointerUp={() => { touchMed.current = false; }}
-            onPointerCancel={() => { touchMed.current = false; }}
-            className="w-14 h-14 rounded-2xl flex flex-col items-center justify-center select-none"
+            onPointerLeave={() => { touchMed.current = false; }}
+            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl select-none active:scale-95"
             style={{
-              background: medDisplay > 0 && livesDisplay < MAX_LIVES
-                ? "rgba(0,230,118,0.35)" : "rgba(255,255,255,0.08)",
-              border: `2px solid ${medDisplay > 0 && livesDisplay < MAX_LIVES ? "#00e676" : "rgba(255,255,255,0.15)"}`,
+              background: medDisplay > 0 ? "rgba(0,230,118,0.25)" : "rgba(255,255,255,0.08)",
+              border: `2px solid ${medDisplay > 0 ? "#00e676" : "rgba(255,255,255,0.15)"}`,
               touchAction: "none",
             }}>
-            <span style={{ fontSize: 22 }}>💊</span>
-            <span className="text-xs font-bold" style={{ color: "#69f0ae" }}>{medDisplay}</span>
+            💊
           </button>
           <button
             onPointerDown={() => { touchJump.current = true; }}
             onPointerUp={() => { touchJump.current = false; }}
-            onPointerCancel={() => { touchJump.current = false; }}
-            className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl select-none"
-            style={{ background: "rgba(255,255,255,0.15)", border: "2px solid rgba(255,255,255,0.25)", touchAction: "none" }}>
-            ▲
+            onPointerLeave={() => { touchJump.current = false; }}
+            className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl select-none active:scale-95"
+            style={{ background: "rgba(255,152,0,0.3)", border: "2px solid #ff9800", touchAction: "none" }}>
+            ↑
           </button>
         </div>
-        {/* Right */}
-        <button
-          onPointerDown={() => { touchRight.current = true; }}
-          onPointerUp={() => { touchRight.current = false; }}
-          onPointerCancel={() => { touchRight.current = false; }}
-          className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl select-none"
-          style={{ background: "rgba(255,255,255,0.12)", border: "2px solid rgba(255,255,255,0.2)", touchAction: "none" }}>
-          ▶
-        </button>
       </div>
     </div>
   );
 
   return (
-    <GameShell topbar={<GameTopbar title="AVOIDit" score={score} />}>
+    <GameShell topbar={<GameTopbar title="AVOIDit" score={score} highScore={highScore} />}>
       <div className="relative w-full h-full overflow-hidden">
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
         {phase === "menu" && renderMenu()}
         {phase === "select" && renderSelect()}
-        {phase === "dead" && renderDead()}
         {phase === "playing" && renderHUD()}
-        {phase === "playing" && renderTouchControls()}
+        {phase === "dead" && renderDead()}
       </div>
     </GameShell>
   );
