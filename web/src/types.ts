@@ -97,3 +97,13 @@ export interface ShockWave {
   maxR: number;
   life: number;
 }
+
+export interface KnifeStyle {
+  id: string;
+  name: string;
+  bladeColor: string;
+  handleColor: string;
+  glowColor: string;
+  trailColor: string;
+  emoji: string;
+}

@@ -652,7 +652,7 @@ export default function App() {
   );
 
   return (
-    <GameShell topbar={<GameTopbar title="AVOIDit" score={score} highScore={highScore} />}>
+    <GameShell topbar={<GameTopbar title="AVOIDit" score={score} stats={[{ label: "Best", value: highScore }]} />}>
       <div className="relative w-full h-full overflow-hidden">
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
         {phase === "menu" && renderMenu()}
